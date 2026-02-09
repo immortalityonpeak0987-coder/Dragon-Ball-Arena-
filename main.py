@@ -120,7 +120,6 @@ CHARACTER_ATTACKS = {
 "Sniper Shot", "Hakai Sphere", "Clone Attack", "Full Power Blast"
 ],
 "Gas": [
-
 "Weapon Creation", "Telekinesis", "Power Strike", "Instinct Power"
 ],
 "Omega": [
@@ -1117,14 +1116,12 @@ return
 starter = STARTER_CHARACTERS[starter_map[choice]]
 
 cur.execute(
-
 """INSERT INTO players (user_id, username, level, xp, coins, mafuba_base, mafuba_power, mafuba_pro, mafuba_ultra_pro, is_admin) 
                VALUES (%s, %s, 1, 0, 100, 3, 1, 0, 0, FALSE)""",
 
 (user_id, username))
 
 cur.execute(
-
 """INSERT INTO player_characters (user_id, name, power, current_power, rarity) 
                VALUES (%s, %s, %s, %s, %s) RETURNING id""",
 
@@ -1134,8 +1131,8 @@ starter['rarity']))
 char_id = cur.fetchone()['id']
 
 cur.execute(
-
 "INSERT INTO teams (user_id, team_number, character_id, slot) VALUES (%s, 1, %s, 1)",
+
 (user_id, char_id))
 
 conn.commit()
@@ -1199,7 +1196,6 @@ reply_markup = ReplyKeyboardMarkup(keyboard,
                                        one_time_keyboard=False)
 
 await update.message.reply_text(
-
 "🎮 **Battle Menu Opened!**\n\nChoose an action:",
 reply_markup=reply_markup,
 parse_mode='Markdown')
@@ -1242,10 +1238,11 @@ else:
 character = random.choice(DRAGON_BALL_CHARACTERS)
 
 cur.execute(
-
 "INSERT INTO wild_spawns (user_id, name, power, rarity) VALUES (%s, %s, %s, %s)",
+
 (user_id, character['name'], character['power'],
-             character['rarity']))
+
+character['rarity']))
 
 conn.commit()
 
@@ -1379,6 +1376,7 @@ await query.edit_message_text(
 cur.execute(
 
 "UPDATE players SET in_tournament = FALSE WHERE user_id = %s",
+
 (user_id, ))
 conn.commit()
 return
@@ -1386,6 +1384,7 @@ catch_rate = TOURNAMENT_CATCH_RATE
 cur.execute(
 
 "UPDATE players SET tournament_mafuba = tournament_mafuba - 1 WHERE user_id = %s",
+
 (user_id, ))
 else:
 
@@ -1395,12 +1394,14 @@ if player.get(mafuba_col, 0) <= 0:
 await query.edit_message_text(
 
 f"⚠️ No {MAFUBA_TYPES[mafuba_type]['name']} left! Buy more at /shop"
+
 )
 return
 catch_rate = MAFUBA_TYPES[mafuba_type]['catch_rate']
 cur.execute(
 
 f"UPDATE players SET {mafuba_col} = {mafuba_col} - 1 WHERE user_id = %s",
+
 (user_id, ))
 
 conn.commit()
@@ -1415,7 +1416,8 @@ cur.execute(
                    VALUES (%s, %s, %s, %s, %s)""",
 
 (user_id, wild['name'], wild['power'], wild['power'],
-                 wild.get('rarity', 'common')))
+
+wild.get('rarity', 'common')))
 
 xp_gain = max(10, wild['power'] // 50)
 cur.execute("SELECT * FROM players WHERE user_id = %s",
@@ -1436,6 +1438,7 @@ level_msg = f"\n\n🎉 **LEVEL UP!** You are now Level {new_level}!"
 cur.execute(
 
 "UPDATE players SET xp = %s, level = %s WHERE user_id = %s",
+
 (new_xp, new_level, user_id))
 cur.execute("DELETE FROM wild_spawns WHERE user_id = %s",
 
@@ -1473,11 +1476,11 @@ parse_mode='Markdown')
 cur.execute("SELECT * FROM players WHERE user_id = %s", (user_id, ))
 player = cur.fetchone()
 if player.get('in_tournament') and player.get('tournament_mafuba',
-
 0) <= 0:
 cur.execute(
 
 "UPDATE players SET in_tournament = FALSE, tournament_mafuba = 0 WHERE user_id = %s",
+
 (user_id, ))
 conn.commit()
 await query.message.reply_text(
@@ -1588,6 +1591,7 @@ if player.get('coins', 0) < price:
 await query.edit_message_text(
 
 f"⚠️ Not enough coins! You have {player.get('coins', 0)}, need {price}."
+
 )
 return
 
@@ -1595,9 +1599,9 @@ mafuba_col = f"mafuba_{mafuba_type}"
 cur.execute(
 
 f"UPDATE players SET coins = coins - %s, {mafuba_col} = {mafuba_col} + 1 WHERE user_id = %s",
+
 (price, user_id))
 conn.commit()
-
 await query.edit_message_text(
 
 f"✅ Bought {MAFUBA_TYPES[mafuba_type]['name']} for {price} coins!")
@@ -1625,6 +1629,7 @@ return
 
 cur.execute(
 "SELECT * FROM player_characters WHERE user_id = %s ORDER BY power DESC",
+
 (user_id, ))
 characters = cur.fetchall()
 
@@ -1691,6 +1696,7 @@ if action == "all":
 cur.execute(
 
 "SELECT * FROM player_characters WHERE user_id = %s ORDER BY power DESC LIMIT 20",
+
 (user_id, ))
 chars = cur.fetchall()
 
@@ -1704,11 +1710,13 @@ else:
 char_list = "\n".join([
 
 f"{RARITY_EMOJIS.get(c.get('rarity', 'common'), '⚪')} {c['name']} - Power: {c['power']}"
+
 for c in chars
 ])
 await query.edit_message_text(
 
 f"📋 **All Characters (Top 20):**\n\n{char_list}",
+
 parse_mode='Markdown')
 else:
 
@@ -1720,7 +1728,7 @@ cur.execute(
                 JOIN player_characters pc ON t.character_id = pc.id 
                 WHERE t.user_id = %s AND t.team_number = %s 
                 ORDER BY t.slot
-            """, (user_id, team_num))
+""", (user_id, team_num))
 
 team_chars = cur.fetchall()
 
@@ -1737,6 +1745,7 @@ if not team_chars:
 await query.edit_message_text(
 
 f"**Team {team_num}** is empty!\n\nUse 'Build Team' to add characters.",
+
 reply_markup=reply_markup,
 parse_mode='Markdown')
 else:
@@ -1744,11 +1753,13 @@ else:
 char_list = "\n".join([
 
 f"Slot {c['slot']}: 🐉 {c['name']} - Power: {c['power']}"
+
 for c in team_chars
 ])
 await query.edit_message_text(
 
 f"**Team {team_num}:**\n\n{char_list}",
+
 reply_markup=reply_markup,
 parse_mode='Markdown')
 finally:
@@ -1782,6 +1793,7 @@ keyboard.append(
 await query.edit_message_text(
 
 "Select a team to build:",
+
 reply_markup=InlineKeyboardMarkup(keyboard))
 return
 
@@ -1797,12 +1809,14 @@ try:
 cur.execute(
 
 "DELETE FROM teams WHERE user_id = %s AND team_number = %s",
+
 (user_id, team_num))
 conn.commit()
 
 cur.execute(
 
 "SELECT * FROM player_characters WHERE user_id = %s ORDER BY power DESC LIMIT 20",
+
 (user_id, ))
 chars = cur.fetchall()
 
@@ -1832,7 +1846,9 @@ keyboard.append(
 await query.edit_message_text(
 
 f"🛠️ **Building Team {team_num}**\n\nSelect up to 4 characters:\n(Selected: 0/4)",
+
 reply_markup=InlineKeyboardMarkup(keyboard),
+
 parse_mode='Markdown')
 finally:
 
@@ -1871,6 +1887,7 @@ try:
 cur.execute(
 
 "SELECT * FROM player_characters WHERE user_id = %s ORDER BY power DESC LIMIT 20",
+
 (user_id, ))
 chars = cur.fetchall()
 
@@ -1883,7 +1900,9 @@ keyboard.append([
 InlineKeyboardButton(
 
 f"{prefix}{char['name']} ({char['power']})",
+
 callback_data=f"selectchar_{char['id']}"
+
 )
 ])
 keyboard.append(
@@ -1896,7 +1915,9 @@ keyboard.append(
 await query.edit_message_text(
 
 f"🛠️ **Building Team {team_num}**\n\nSelect up to 4 characters:\n(Selected: {len(selected)}/4)",
+
 reply_markup=InlineKeyboardMarkup(keyboard),
+
 parse_mode='Markdown')
 finally:
 
@@ -1926,6 +1947,7 @@ try:
 cur.execute(
 
 "DELETE FROM teams WHERE user_id = %s AND team_number = %s",
+
 (user_id, team_num))
 
 for slot, char_id in enumerate(selected, 1):
@@ -1933,6 +1955,7 @@ for slot, char_id in enumerate(selected, 1):
 cur.execute(
 
 "INSERT INTO teams (user_id, team_number, character_id, slot) VALUES (%s, %s, %s, %s)",
+
 (user_id, team_num, char_id, slot))
 
 conn.commit()
@@ -1990,6 +2013,7 @@ player = cur.fetchone()
 cur.execute(
 
 "SELECT COUNT(*) as count FROM player_characters WHERE user_id = %s",
+
 (user_id, ))
 char_count = cur.fetchone()['count']
 
@@ -2030,6 +2054,7 @@ Select an option:
         """,
 
 reply_markup=InlineKeyboardMarkup(keyboard),
+
 parse_mode='Markdown')
 finally:
 
@@ -2077,6 +2102,7 @@ if not team_chars:
 await update.message.reply_text(
 
 f"⚠️ Team {player.get('active_team', 1)} is empty! Use /team to add characters."
+
 )
 return
 
@@ -2264,6 +2290,7 @@ if elapsed < 5:
 await query.answer(
 
 f"Swap cooldown! Wait {int(5 - elapsed)}s",
+
 show_alert=True)
 return
 
@@ -2275,7 +2302,9 @@ keyboard.append([
 InlineKeyboardButton(
 
 f"{char['name']} ({char['current_power']} HP)",
+
 callback_data=f"swap_{char['slot']}"
+
 )
 ])
 keyboard.append(
@@ -2285,6 +2314,7 @@ keyboard.append(
 await query.edit_message_text(
 
 "🔄 Select a character to swap:",
+
 reply_markup=InlineKeyboardMarkup(keyboard))
 return
 
@@ -2330,6 +2360,7 @@ InlineKeyboardButton("🏃 Run Away",
 
 callback_data="fight_run")
 ]
+
 ]
 await query.edit_message_text(
 
@@ -2343,6 +2374,7 @@ Choose your attack!
             """,
 
 reply_markup=InlineKeyboardMarkup(keyboard),
+
 parse_mode='Markdown')
 return
 
@@ -2367,6 +2399,7 @@ new_your_power = max(
 cur.execute(
 
 "UPDATE player_characters SET current_power = %s WHERE id = %s",
+
 (new_your_power, current_fighter['id']))
 conn.commit()
 
@@ -2410,6 +2443,7 @@ InlineKeyboardButton("🏃 Run Away",
 
 callback_data="fight_run")
 ]
+
 ]
 
 await query.edit_message_text(
@@ -2425,6 +2459,7 @@ Enemy countered for {enemy_damage} damage!
                 """,
 
 reply_markup=InlineKeyboardMarkup(keyboard),
+
 parse_mode='Markdown')
 return
 
@@ -2446,10 +2481,12 @@ new_your_power = max(
 cur.execute(
 
 "UPDATE battle_sessions SET enemy_current_power = %s WHERE user_id = %s",
+
 (new_enemy_power, user_id))
 cur.execute(
 
 "UPDATE player_characters SET current_power = %s WHERE id = %s",
+
 (new_your_power, current_fighter['id']))
 conn.commit()
 
@@ -2457,7 +2494,6 @@ if new_enemy_power <= 0:
 
 xp_gain = max(15, battle['enemy_power'] // 30)
 coin_gain = max(10, battle['enemy_power'] // 20)
-
 new_xp = player.get('xp', 0) + xp_gain
 new_level = player.get('level', 1)
 level_msg = ""
@@ -2471,10 +2507,12 @@ level_msg = f"\n🎉 **LEVEL UP!** Now Level {new_level}!"
 cur.execute(
 
 "UPDATE players SET xp = %s, level = %s, coins = coins + %s WHERE user_id = %s",
+
 (new_xp, new_level, coin_gain, user_id))
 cur.execute(
 
 "UPDATE player_characters SET current_power = power WHERE user_id = %s",
+
 (user_id, ))
 cur.execute("DELETE FROM battle_sessions WHERE user_id = %s",
 
@@ -2510,6 +2548,7 @@ if next_fighter:
 cur.execute(
 
 "UPDATE battle_sessions SET active_char_slot = %s WHERE user_id = %s",
+
 (next_fighter['slot'], user_id))
 conn.commit()
 
@@ -2526,6 +2565,7 @@ callback_data="fight_attack_0")
 InlineKeyboardButton(
 
 f"⚔️ {attacks[1]}",
+
 callback_data="fight_attack_1")
 ],
 [
@@ -2533,6 +2573,7 @@ callback_data="fight_attack_1")
 InlineKeyboardButton(
 
 f"⚔️ {attacks[2]}",
+
 callback_data="fight_attack_2")
 ],
 [
@@ -2540,6 +2581,7 @@ callback_data="fight_attack_2")
 InlineKeyboardButton(
 
 f"⚔️ {attacks[3]}",
+
 callback_data="fight_attack_3")
 ],
 [
@@ -2547,6 +2589,7 @@ callback_data="fight_attack_3")
 InlineKeyboardButton(
 
 "🔄 Swap Character",
+
 callback_data="fight_swap")
 ],
 [
@@ -2554,6 +2597,7 @@ callback_data="fight_swap")
 InlineKeyboardButton(
 
 "🏃 Run Away",
+
 callback_data="fight_run")
 ]]
 
@@ -2569,22 +2613,25 @@ f"""
                     """,
 
 reply_markup=InlineKeyboardMarkup(keyboard),
+
 parse_mode='Markdown')
 else:
 
 cur.execute(
 
 "UPDATE player_characters SET current_power = power WHERE user_id = %s",
+
 (user_id, ))
 
 cur.execute(
 
 "DELETE FROM battle_sessions WHERE user_id = %s",
+
 (user_id, ))
 conn.commit()
 
 await query.edit_message_text(f"""
-😞 **DEFEAT!** 😞
+💔 **DEFEAT!** 💔
 
 All your fighters fainted!
 {battle['enemy_name']} wins this round.
@@ -2635,6 +2682,7 @@ InlineKeyboardButton("🏃 Run Away",
 
 callback_data="fight_run")
 ]
+
 ]
 
 await query.edit_message_text(
@@ -2650,6 +2698,7 @@ Enemy countered for {enemy_damage} damage!
                 """,
 
 reply_markup=InlineKeyboardMarkup(keyboard),
+
 parse_mode='Markdown')
 finally:
 
@@ -2672,6 +2721,7 @@ try:
 cur.execute(
 
 "UPDATE battle_sessions SET active_char_slot = %s, last_swap_time = NOW() WHERE user_id = %s",
+
 (slot, user_id))
 conn.commit()
 
@@ -2683,13 +2733,13 @@ battle = cur.fetchone()
 cur.execute("SELECT * FROM players WHERE user_id = %s", (user_id, ))
 player = cur.fetchone()
 
-cur.execute(
+cur.execute("SELECT * FROM teams t "
 
-"""
-            SELECT pc.* FROM teams t 
-            JOIN player_characters pc ON t.character_id = pc.id 
-            WHERE t.user_id = %s AND t.team_number = %s AND t.slot = %s
-        """, (user_id, player.get('active_team', 1), slot))
+"JOIN player_characters pc ON t.character_id = pc.id "
+
+"WHERE t.user_id = %s AND t.team_number = %s AND t.slot = %s",
+
+(user_id, player.get('active_team', 1), slot))
 
 new_fighter = cur.fetchone()
 
@@ -2744,6 +2794,7 @@ f"""
         """,
 
 reply_markup=InlineKeyboardMarkup(keyboard),
+
 parse_mode='Markdown')
 finally:
 
@@ -2813,6 +2864,7 @@ Ready to enter?
         """,
 
 reply_markup=InlineKeyboardMarkup(keyboard),
+
 parse_mode='Markdown')
 finally:
 
@@ -2840,6 +2892,7 @@ if player.get('coins', 0) < TOURNAMENT_ENTRY_FEE:
 await query.edit_message_text(
 
 f"⚠️ Not enough coins! Need {TOURNAMENT_ENTRY_FEE}, have {player.get('coins', 0)}."
+
 )
 return
 
@@ -2933,6 +2986,7 @@ InlineKeyboardButton(f"🎲 Bet 10",
 
 callback_data=f"duelbet_{duel_id}_10")
 ],
+
 [
 
 InlineKeyboardButton(f"💰 Bet 50",
@@ -2972,6 +3026,7 @@ f"""
         """,
 
 reply_markup=InlineKeyboardMarkup(keyboard),
+
 parse_mode='Markdown')
 finally:
 
@@ -3037,6 +3092,7 @@ callback_data=f"duelaccept_{duel_id}")
 InlineKeyboardButton(
 
 "❌ Decline",
+
 callback_data=f"dueldecline_{duel_id}")
 ]]
 
@@ -3052,6 +3108,7 @@ Waiting for opponent to accept...
         """,
 
 reply_markup=InlineKeyboardMarkup(keyboard),
+
 parse_mode='Markdown')
 finally:
 
@@ -3196,7 +3253,6 @@ await query.answer("Only the challenged player can decline!",
 
 show_alert=True)
 return
-
 cur.execute("UPDATE duels SET status = 'declined' WHERE id = %s",
 
 (duel_id, ))
@@ -3295,6 +3351,7 @@ new_attacker_power = max(
 cur.execute(
 
 "UPDATE player_characters SET current_power = %s WHERE id = %s",
+
 (new_attacker_power, attacker_fighter['id']))
 conn.commit()
 
@@ -3318,8 +3375,6 @@ next_turn = defender_id
 cur.execute("UPDATE duel_sessions SET current_turn = %s WHERE id = %s", (next_turn, duel_session_id))
 conn.commit()
 
-# Update the message with new keyboard for next turn
-
 await send_duel_battle_message(context.bot, query.message.chat_id, duel_session_id, edit_message_id=query.message.id)
 
 return
@@ -3342,10 +3397,12 @@ new_attacker_power = max(
 cur.execute(
 
 "UPDATE player_characters SET current_power = %s WHERE id = %s",
+
 (new_defender_power, defender_fighter['id']))
 cur.execute(
 
 "UPDATE player_characters SET current_power = %s WHERE id = %s",
+
 (new_attacker_power, attacker_fighter['id']))
 conn.commit()
 
@@ -3371,12 +3428,14 @@ if attacker_id == duel_session['challenger_id']:
 cur.execute(
 
 "UPDATE duel_sessions SET defender_active_slot = %s WHERE id = %s",
+
 (next_defender['slot'], duel_session_id))
 else:
 
 cur.execute(
 
 "UPDATE duel_sessions SET challenger_active_slot = %s WHERE id = %s",
+
 (next_defender['slot'], duel_session_id))
 conn.commit()
 
@@ -3413,6 +3472,8 @@ cur.execute("UPDATE players SET coins = coins + %s WHERE user_id = %s", (prize, 
 cur.execute("UPDATE player_characters SET current_power = power WHERE user_id = %s", (winner_id, ))
 cur.execute("UPDATE player_characters SET current_power = power WHERE user_id = %s", (loser_id, ))
 cur.execute("DELETE FROM duel_sessions WHERE id = %s", (duel_session_id, ))
+cur.execute("SELECT * FROM duels WHERE challenger_id = %s AND defender_id = %s", (duel_session['challenger_id'], duel_session['defender_id']))
+duel = cur.fetchone()
 cur.execute("UPDATE duels SET status = 'completed', winner_id = %s WHERE id = %s", (winner_id, duel['id']))
 conn.commit()
 
@@ -3448,12 +3509,14 @@ if attacker_id == duel_session['challenger_id']:
 cur.execute(
 
 "UPDATE duel_sessions SET challenger_active_slot = %s WHERE id = %s",
+
 (next_attacker['slot'], duel_session_id))
 else:
 
 cur.execute(
 
 "UPDATE duel_sessions SET defender_active_slot = %s WHERE id = %s",
+
 (next_attacker['slot'], duel_session_id))
 conn.commit()
 
@@ -3490,6 +3553,8 @@ cur.execute("UPDATE players SET coins = coins + %s WHERE user_id = %s", (prize, 
 cur.execute("UPDATE player_characters SET current_power = power WHERE user_id = %s", (winner_id, ))
 cur.execute("UPDATE player_characters SET current_power = power WHERE user_id = %s", (loser_id, ))
 cur.execute("DELETE FROM duel_sessions WHERE id = %s", (duel_session_id, ))
+cur.execute("SELECT * FROM duels WHERE challenger_id = %s AND defender_id = %s", (duel_session['challenger_id'], duel_session['defender_id']))
+duel = cur.fetchone()
 cur.execute("UPDATE duels SET status = 'completed', winner_id = %s WHERE id = %s", (winner_id, duel['id']))
 conn.commit()
 
@@ -3574,7 +3639,6 @@ defender_fighter = cur.fetchone()
 if current_turn == challenger_id:
 
 attacker_fighter = challenger_fighter
-defender_fighter = defender_fighter  # wait, no, for keyboard, use attacker
 attacks = get_character_attacks(attacker_fighter['name'])
 
 keyboard = [[
@@ -3761,6 +3825,7 @@ if elapsed < 5:
 await query.answer(
 
 f"Swap cooldown! Wait {int(5 - elapsed)}s",
+
 show_alert=True)
 return
 
@@ -3772,7 +3837,9 @@ keyboard.append([
 InlineKeyboardButton(
 
 f"{char['name']} ({char['current_power']} HP)",
+
 callback_data=f"duel_swapto_{duel_session_id}_{char['slot']}"
+
 )
 ])
 keyboard.append(
@@ -3782,6 +3849,7 @@ keyboard.append(
 await query.edit_message_text(
 
 "🔄 Select a character to swap:",
+
 reply_markup=InlineKeyboardMarkup(keyboard))
 finally:
 
@@ -3809,12 +3877,14 @@ if user_id == duel_session['challenger_id']:
 cur.execute(
 
 "UPDATE duel_sessions SET challenger_active_slot = %s WHERE id = %s",
+
 (slot, duel_session_id))
 else:
 
 cur.execute(
 
 "UPDATE duel_sessions SET defender_active_slot = %s WHERE id = %s",
+
 (slot, duel_session_id))
 conn.commit()
 
@@ -3867,69 +3937,69 @@ return
 
 if user_id != duel_session['current_turn']:
 
-await query.answer("It's not your turn!", show_alert=True)
+await query.answer("It's not your turn!", show_alert=True
 return
 
-# The runner loses, opponent wins
+# --- DUEL RESOLUTION LOGIC (Yeh kisi existing function ke andar aayega) ---
+    # The runner loses, opponent wins
+    if user_id == duel_session['challenger_id']:
+        winner_id = duel_session['defender_id']
+        loser_id = duel_session['challenger_id']
+    else:
+        winner_id = duel_session['challenger_id']
+        loser_id = duel_session['defender_id']
 
-if user_id == duel_session['challenger_id']:
+    prize = duel_session['bet_amount'] * 2
+    
+    cur.execute("UPDATE players SET coins = coins + %s WHERE user_id = %s", (prize, winner_id))
+    cur.execute("UPDATE player_characters SET current_power = power WHERE user_id = %s", (winner_id, ))
+    cur.execute("UPDATE player_characters SET current_power = power WHERE user_id = %s", (loser_id, ))
+    cur.execute("DELETE FROM duel_sessions WHERE id = %s", (duel_session_id, ))
+    cur.execute(
+        "UPDATE duels SET status = 'completed', winner_id = %s WHERE challenger_id = %s AND defender_id = %s", 
+        (winner_id, duel_session['challenger_id'], duel_session['defender_id'])
+    )
+    conn.commit()
 
-winner_id = duel_session['defender_id']
-loser_id = duel_session['challenger_id']
-else:
-
-winner_id = duel_session['challenger_id']
-loser_id = duel_session['defender_id']
-
-prize = duel_session['bet_amount'] * 2
-cur.execute("UPDATE players SET coins = coins + %s WHERE user_id = %s", (prize, winner_id))
-cur.execute("UPDATE player_characters SET current_power = power WHERE user_id = %s", (winner_id, ))
-cur.execute("UPDATE player_characters SET current_power = power WHERE user_id = %s", (loser_id, ))
-cur.execute("DELETE FROM duel_sessions WHERE id = %s", (duel_session_id, ))
-cur.execute("UPDATE duels SET status = 'completed', winner_id = %s WHERE challenger_id = %s AND defender_id = %s", (winner_id, duel_session['challenger_id'], duel_session['defender_id']))
-conn.commit()
-
-await query.edit_message_text(f"""
+    await query.edit_message_text(
+        f"""
 🏃 **RUN AWAY!** 🏃
 
 You ran from the duel!
 Opponent wins the prize of {prize} coins!
         """,
-
-parse_mode='Markdown')
+        parse_mode='Markdown'
+    )
+# finally block tabhi aayega agar upar try block ho, context ke hisaab se yahan rakha hai
 finally:
+    cur.close()
+    conn.close()
 
-cur.close()
-conn.close()
+# --- COMMAND FUNCTIONS START HERE ---
 
 async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    conn = get_db_connection()
+    cur = conn.cursor()
 
-user_id = update.effective_user.id
+    try:
+        cur.execute("SELECT * FROM players WHERE user_id = %s", (user_id, ))
+        player = cur.fetchone()
 
-conn = get_db_connection()
-cur = conn.cursor()
+        if not player:
+            await update.message.reply_text("⚠️ You need to /register first!")
+            return
 
-try:
+        cur.execute(
+            "SELECT COUNT(*) as count, COALESCE(SUM(power), 0) as total FROM player_characters WHERE user_id = %s",
+            (user_id, )
+        )
+        chars = cur.fetchone()
 
-cur.execute("SELECT * FROM players WHERE user_id = %s", (user_id, ))
-player = cur.fetchone()
+        tournament_status = "🏆 In Tournament!" if player.get('in_tournament') else "Not in tournament"
 
-if not player:
-
-await update.message.reply_text("⚠️ You need to /register first!")
-return
-
-cur.execute(
-
-"SELECT COUNT(*) as count, COALESCE(SUM(power), 0) as total FROM player_characters WHERE user_id = %s",
-(user_id, ))
-chars = cur.fetchone()
-
-tournament_status = "🏆 In Tournament!" if player.get(
-
-'in_tournament') else "Not in tournament"
-
-await update.message.reply_text(f"""
+        await update.message.reply_text(
+            f"""
 📊 **WARRIOR STATS** 📊
 
 👤 **{player.get('username', 'Unknown')}**
@@ -3948,47 +4018,41 @@ await update.message.reply_text(f"""
 💎 Ultra Pro: {player.get('mafuba_ultra_pro', 0)}
 
 {tournament_status}
-        """,
+            """,
+            parse_mode='Markdown'
+        )
+    finally:
+        cur.close()
+        conn.close()
 
-parse_mode='Markdown')
-finally:
-
-cur.close()
-conn.close()
 
 DAILY_COINS_REWARD = 50
 DAILY_MAFUBA_REWARD = 2
 BIO_REQUIREMENT = "@Dragonball_gamingbot"
 
 async def daily(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    conn = get_db_connection()
+    cur = conn.cursor()
 
-user_id = update.effective_user.id
+    try:
+        cur.execute("SELECT * FROM players WHERE user_id = %s", (user_id, ))
+        player = cur.fetchone()
 
-conn = get_db_connection()
-cur = conn.cursor()
+        if not player:
+            await update.message.reply_text("⚠️ You need to /register first!")
+            return
 
-try:
+        try:
+            user_full = await context.bot.get_chat(user_id)
+            user_bio = user_full.bio or ""
+        except Exception as e:
+            logging.error(f"Error getting user bio: {e}")
+            user_bio = ""
 
-cur.execute("SELECT * FROM players WHERE user_id = %s", (user_id, ))
-player = cur.fetchone()
-
-if not player:
-
-await update.message.reply_text("⚠️ You need to /register first!")
-return
-
-try:
-
-user_full = await context.bot.get_chat(user_id)
-user_bio = user_full.bio or ""
-except Exception as e:
-
-logging.error(f"Error getting user bio: {e}")
-user_bio = ""
-
-if BIO_REQUIREMENT.lower() not in user_bio.lower():
-
-await update.message.reply_text(f"""
+        if BIO_REQUIREMENT.lower() not in user_bio.lower():
+            await update.message.reply_text(
+                f"""
 ❌ **DAILY REWARD LOCKED** ❌
 
 To claim your daily rewards, you must add this text to your Telegram bio:
@@ -4003,27 +4067,26 @@ To claim your daily rewards, you must add this text to your Telegram bio:
 5. Save and try /daily again!
 
 🎁 Daily rewards: {DAILY_COINS_REWARD} coins + {DAILY_MAFUBA_REWARD} Mafuba Base
-            """, parse_mode='Markdown')
+                """, 
+                parse_mode='Markdown'
+            )
+            return
 
-return
+        cur.execute("SELECT * FROM daily_claims WHERE user_id = %s", (user_id, ))
+        claim = cur.fetchone()
+        now = datetime.now()
 
-cur.execute("SELECT * FROM daily_claims WHERE user_id = %s", (user_id, ))
-claim = cur.fetchone()
+        if claim:
+            last_claim = claim['last_claim']
+            next_claim = last_claim + timedelta(days=1)
 
-now = datetime.now()
+            if now < next_claim:
+                time_left = next_claim - now
+                hours, remainder = divmod(int(time_left.total_seconds()), 3600)
+                minutes, seconds = divmod(remainder, 60)
 
-if claim:
-
-last_claim = claim['last_claim']
-next_claim = last_claim + timedelta(days=1)
-
-if now < next_claim:
-
-time_left = next_claim - now
-hours, remainder = divmod(int(time_left.total_seconds()), 3600)
-minutes, seconds = divmod(remainder, 60)
-
-await update.message.reply_text(f"""
+                await update.message.reply_text(
+                    f"""
 ⏳ **DAILY REWARD COOLDOWN** ⏳
 
 You've already claimed your daily reward!
@@ -4031,31 +4094,26 @@ You've already claimed your daily reward!
 ⏰ Next claim available in: **{hours}h {minutes}m {seconds}s**
 
 Come back later! 🐉
-                """, parse_mode='Markdown')
+                    """, 
+                    parse_mode='Markdown'
+                )
+                return
 
-return
+            cur.execute("UPDATE daily_claims SET last_claim = %s WHERE user_id = %s", (now, user_id))
+        else:
+            cur.execute("INSERT INTO daily_claims (user_id, last_claim) VALUES (%s, %s)", (user_id, now))
 
-cur.execute(
+        cur.execute(
+            "UPDATE players SET coins = coins + %s, mafuba_base = mafuba_base + %s WHERE user_id = %s",
+            (DAILY_COINS_REWARD, DAILY_MAFUBA_REWARD, user_id)
+        )
+        conn.commit()
 
-"UPDATE daily_claims SET last_claim = %s WHERE user_id = %s",
-(now, user_id))
-else:
+        cur.execute("SELECT * FROM players WHERE user_id = %s", (user_id, ))
+        updated_player = cur.fetchone()
 
-cur.execute(
-
-"INSERT INTO daily_claims (user_id, last_claim) VALUES (%s, %s)",
-(user_id, now))
-
-cur.execute(
-
-"UPDATE players SET coins = coins + %s, mafuba_base = mafuba_base + %s WHERE user_id = %s",
-(DAILY_COINS_REWARD, DAILY_MAFUBA_REWARD, user_id))
-conn.commit()
-
-cur.execute("SELECT * FROM players WHERE user_id = %s", (user_id, ))
-updated_player = cur.fetchone()
-
-await update.message.reply_text(f"""
+        await update.message.reply_text(
+            f"""
 🎉 **DAILY REWARD CLAIMED!** 🎉
 
 ✅ You received:
@@ -4067,242 +4125,198 @@ await update.message.reply_text(f"""
 🏺 Mafuba Base: {updated_player.get('mafuba_base', 0)}
 
 Come back in 24 hours for more rewards! 🐉
-        """, parse_mode='Markdown')
+            """, 
+            parse_mode='Markdown'
+        )
 
-except Exception as e:
+    except Exception as e:
+        logging.error(f"Daily reward error: {e}")
+        conn.rollback()
+        await update.message.reply_text("An error occurred. Please try again.")
+    finally:
+        cur.close()
+        conn.close()
 
-logging.error(f"Daily reward error: {e}")
-conn.rollback()
-await update.message.reply_text("An error occurred. Please try again.")
-finally:
-
-cur.close()
-conn.close()
 
 async def admin_add_coins(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    chat_id = update.effective_chat.id
+    chat_type = update.effective_chat.type
 
-user_id = update.effective_user.id
-chat_id = update.effective_chat.id
-chat_type = update.effective_chat.type
+    if not can_use_admin_commands(user_id, chat_id, chat_type):
+        await update.message.reply_text("⚠️ You don't have permission to use this command!")
+        return
 
-if not can_use_admin_commands(user_id, chat_id, chat_type):
+    if not update.message.reply_to_message:
+        await update.message.reply_text("Reply to a user's message with /add <amount>")
+        return
 
-await update.message.reply_text(
+    try:
+        amount = int(context.args[0])
+    except:
+        await update.message.reply_text("Usage: /add <amount>")
+        return
 
-"⚠️ You don't have permission to use this command!")
-return
+    target_id = update.message.reply_to_message.from_user.id
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute("UPDATE players SET coins = coins + %s WHERE user_id = %s", (amount, target_id))
+        conn.commit()
+        await update.message.reply_text(f"✅ Added {amount} coins to user!")
+    finally:
+        cur.close()
+        conn.close()
 
-if not update.message.reply_to_message:
 
-await update.message.reply_text(
+async def admin_remove_coins(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    chat_id = update.effective_chat.id
+    chat_type = update.effective_chat.type
 
-"Reply to a user's message with /add <amount>")
-return
+    if not can_use_admin_commands(user_id, chat_id, chat_type):
+        await update.message.reply_text("⚠️ You don't have permission to use this command!")
+        return
 
-try:
+    if not update.message.reply_to_message:
+        await update.message.reply_text("Reply to a user's message with /remove <amount>")
+        return
 
-amount = int(context.args[0])
-except:
+    try:
+        amount = int(context.args[0])
+    except:
+        await update.message.reply_text("Usage: /remove <amount>")
+        return
 
-await update.message.reply_text("Usage: /add <amount>")
-return
+    target_id = update.message.reply_to_message.from_user.id
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute("UPDATE players SET coins = coins - %s WHERE user_id = %s", (amount, target_id))
+        conn.commit()
+        await update.message.reply_text(f"✅ Removed {amount} coins from user!")
+    finally:
+        cur.close()
+        conn.close()
 
-target_id = update.message.reply_to_message.from_user.id
 
-conn = get_db_connection()
-cur = conn.cursor()
-try:
+async def admin_give_mafuba(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    chat_id = update.effective_chat.id
+    chat_type = update.effective_chat.type
 
-cur.execute("UPDATE players SET coins = coins + %s WHERE user_id = %s",
+    if not can_use_admin_commands(user_id, chat_id, chat_type):
+        await update.message.reply_text("⚠️ You don't have permission to use this command!")
+        return
 
-(amount, target_id))
-conn.commit()
-await update.message.reply_text(f"✅ Added {amount} coins to user!")
-finally:
+    if not update.message.reply_to_message:
+        await update.message.reply_text("Reply to a user's message with /givemafuba <type> <amount>")
+        return
 
-cur.close()
-conn.close()
+    try:
+        mafuba_type = context.args[0].lower()
+        amount = int(context.args[1])
+        if mafuba_type not in ['base', 'power', 'pro', 'ultra_pro']:
+            raise ValueError("Invalid mafuba type")
+    except:
+        await update.message.reply_text("Usage: /givemafuba <base/power/pro/ultra_pro> <amount>")
+        return
 
-async def admin_remove_coins(update: Update,
+    target_id = update.message.reply_to_message.from_user.id
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            f"UPDATE players SET mafuba_{mafuba_type} = mafuba_{mafuba_type} + %s WHERE user_id = %s",
+            (amount, target_id)
+        )
+        conn.commit()
+        await update.message.reply_text(f"✅ Gave {amount} Mafuba {mafuba_type} to user!")
+    finally:
+        cur.close()
+        conn.close()
 
-context: ContextTypes.DEFAULT_TYPE):
-user_id = update.effective_user.id
-chat_id = update.effective_chat.id
-chat_type = update.effective_chat.type
-
-if not can_use_admin_commands(user_id, chat_id, chat_type):
-
-await update.message.reply_text(
-
-"⚠️ You don't have permission to use this command!")
-return
-
-if not update.message.reply_to_message:
-
-await update.message.reply_text(
-
-"Reply to a user's message with /remove <amount>")
-return
-
-try:
-
-amount = int(context.args[0])
-except:
-
-await update.message.reply_text("Usage: /remove <amount>")
-return
-
-target_id = update.message.reply_to_message.from_user.id
-
-conn = get_db_connection()
-cur = conn.cursor()
-try:
-
-cur.execute("UPDATE players SET coins = coins - %s WHERE user_id = %s",
-
-(amount, target_id))
-conn.commit()
-await update.message.reply_text(f"✅ Removed {amount} coins from user!")
-finally:
-
-cur.close()
-conn.close()
-
-async def admin_give_mafuba(update: Update,
-
-context: ContextTypes.DEFAULT_TYPE):
-user_id = update.effective_user.id
-chat_id = update.effective_chat.id
-chat_type = update.effective_chat.type
-
-if not can_use_admin_commands(user_id, chat_id, chat_type):
-
-await update.message.reply_text(
-
-"⚠️ You don't have permission to use this command!")
-return
-
-if not update.message.reply_to_message:
-
-await update.message.reply_text(
-
-"Reply to a user's message with /givemafuba <type> <amount>")
-return
-
-try:
-
-mafuba_type = context.args[0].lower()
-amount = int(context.args[1])
-if mafuba_type not in ['base', 'power', 'pro', 'ultra_pro']:
-
-raise ValueError("Invalid mafuba type")
-except:
-
-await update.message.reply_text(
-
-"Usage: /givemafuba <base/power/pro/ultra_pro> <amount>")
-return
-
-target_id = update.message.reply_to_message.from_user.id
-
-conn = get_db_connection()
-cur = conn.cursor()
-try:
-
-cur.execute(
-
-f"UPDATE players SET mafuba_{mafuba_type} = mafuba_{mafuba_type} + %s WHERE user_id = %s",
-(amount, target_id))
-conn.commit()
-await update.message.reply_text(
-
-f"✅ Gave {amount} Mafuba {mafuba_type} to user!")
-finally:
-
-cur.close()
-conn.close()
 
 async def admin_set_level(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    chat_id = update.effective_chat.id
+    chat_type = update.effective_chat.type
 
-user_id = update.effective_user.id
-chat_id = update.effective_chat.id
-chat_type = update.effective_chat.type
+    if not can_use_admin_commands(user_id, chat_id, chat_type):
+        await update.message.reply_text("⚠️ You don't have permission to use this command!")
+        return
 
-if not can_use_admin_commands(user_id, chat_id, chat_type):
+    if not update.message.reply_to_message:
+        await update.message.reply_text("Reply to a user's message with /setlevel <level>")
+        return
 
-await update.message.reply_text(
+    try:
+        level = int(context.args[0])
+    except:
+        await update.message.reply_text("Usage: /setlevel <level>")
+        return
 
-"⚠️ You don't have permission to use this command!")
-return
+    target_id = update.message.reply_to_message.from_user.id
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute("UPDATE players SET level = %s WHERE user_id = %s", (level, target_id))
+        conn.commit()
+        await update.message.reply_text(f"✅ Set user level to {level}!")
+    finally:
+        cur.close()
+        conn.close()
 
-if not update.message.reply_to_message:
-
-await update.message.reply_text(
-
-"Reply to a user's message with /setlevel <level>")
-return
-
-try:
-
-level = int(context.args[0])
-except:
-
-await update.message.reply_text("Usage: /setlevel <level>")
-return
-
-target_id = update.message.reply_to_message.from_user.id
-
-conn = get_db_connection()
-cur = conn.cursor()
-try:
-
-cur.execute("UPDATE players SET level = %s WHERE user_id = %s",
-
-(level, target_id))
-conn.commit()
-await update.message.reply_text(f"✅ Set user level to {level}!")
-finally:
-
-cur.close()
-conn.close()
 
 async def admin_add_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
 
-user_id = update.effective_user.id
+    if not is_owner(user_id):
+        await update.message.reply_text("⚠️ Only the owner can add admins!")
+        return
 
-if not is_owner(user_id):
+    if not update.message.reply_to_message:
+        await update.message.reply_text("Reply to a user's message with /addadmin")
+        return
 
-await update.message.reply_text("⚠️ Only the owner can add admins!")
-return
+    target_id = update.message.reply_to_message.from_user.id
+    target_name = update.message.reply_to_message.from_user.first_name or "User"
 
-if not update.message.reply_to_message:
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            "INSERT INTO admins (user_id, is_owner) VALUES (%s, FALSE) ON CONFLICT (user_id) DO NOTHING",
+            (target_id, )
+        )
+        conn.commit()
+        await update.message.reply_text(f"✅ {target_name} has been added as admin!")
+    finally:
+        cur.close()
+        conn.close()
 
-await update.message.reply_text(
 
-"Reply to a user's message with /addadmin")
-return
+async def admin_remove_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
 
-target_id = update.message.reply_to_message.from_user.id
-target_name = update.message.reply_to_message.from_user.first_name or "User"
+    if not is_owner(user_id):
+        await update.message.reply_text("⚠️ Only the owner can remove admins!")
+        return
 
-conn = get_db_connection()
-cur = conn.cursor()
-try:
+    if not update.message.reply_to_message:
+        await update.message.reply_text("Reply to a user's message with /removeadmin")
+        return
 
-cur.execute(
+    target_id = update.message.reply_to_message.from_user.id
+    target_name = update.message.reply_to_message.from_user.first_name or "User"
 
-"INSERT INTO admins (user_id, is_owner) VALUES (%s, FALSE) ON CONFLICT (user_id) DO NOTHING",
-(target_id, ))
-conn.commit()
-await update.message.reply_text(
-
-f"✅ {target_name} has been added as admin!")
-finally:
-
-cur.close()
-conn.close()
-
-async def admin_remove_admin(update: Update,
-
-context: ContextTypes.DEFAULT_TYPE):
-user_id = update.effective_user
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute("DELETE FROM admins WHERE user_id = %s", (target_id, ))
+        conn.commit()
+        await update.message.reply_text(f"✅ {target_name} has been removed from admins!")
+    finally:
+        cur.close()
+        conn.close()
+        
