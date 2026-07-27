@@ -2019,6 +2019,30 @@ async def admin_remove_admin(update: Update, context: ContextTypes.DEFAULT_TYPE)
         cur.close()
         conn.close()
 
+async def admin_approve_group(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    chat_id = update.effective_chat.id
+    
+    if not is_admin(user_id):
+        await update.message.reply_text("⚠️ You don't have permission to approve groups!")
+        return
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            "INSERT INTO approved_groups (group_id) VALUES (%s) ON CONFLICT (group_id) DO NOTHING", 
+            (chat_id, )
+        )
+        conn.commit()
+        await update.message.reply_text("✅ This group has been approved for admin commands!")
+    except Exception as e:
+        logging.error(f"Error approving group: {e}")
+        await update.message.reply_text("An error occurred while approving the group.")
+    finally:
+        cur.close()
+        conn.close()
+
 # --- FLASK KEEP-ALIVE SERVER (FOR UPTIMEROBOT) ---
 from threading import Thread
 import os
@@ -2071,7 +2095,7 @@ def main():
     application.add_handler(CommandHandler("setlevel", admin_set_level))
     application.add_handler(CommandHandler("addadmin", admin_add_admin))
     application.add_handler(CommandHandler("removeadmin", admin_remove_admin))
-
+    application.add_handler(CommandHandler("approve", admin_approve_group))
     # --- BUTTON CLICKS LINKING (Callback Handlers) ---
     application.add_handler(CallbackQueryHandler(starter_callback, pattern="^starter_"))
     application.add_handler(CallbackQueryHandler(mafuba_callback, pattern="^mafuba_"))
