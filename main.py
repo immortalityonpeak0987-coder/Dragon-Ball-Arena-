@@ -4316,7 +4316,95 @@ async def admin_remove_admin(update: Update, context: ContextTypes.DEFAULT_TYPE)
         cur.execute("DELETE FROM admins WHERE user_id = %s", (target_id, ))
         conn.commit()
         await update.message.reply_text(f"✅ {target_name} has been removed from admins!")
-    finally:
+        finally:
         cur.close()
         conn.close()
-        
+
+# --- FLASK KEEP-ALIVE SERVER (FOR UPTIMEROBOT) ---
+from threading import Thread
+import os
+
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "Dragon Ball Arena Bot is Alive!"
+
+def run():
+    # Render dynamic port assign karta hai
+    port = int(os.environ.get('PORT', 8080))
+    app.run(host='0.0.0.0', port=port)
+
+def keep_alive():
+    t = Thread(target=run)
+    t.start()
+
+
+# --- BOT INITIALIZATION ---
+def main():
+    # 1. Database initialize karein
+    init_db()
+
+    # 2. 24/7 web server start karein
+    keep_alive()
+    
+    # 3. Telegram Bot engine banayein
+    application = Application.builder().token(TELEGRAM_TOKEN).build()
+    
+    # --- COMMANDS LINKING (Handlers) ---
+    # Ye handlers Telegram commands ko aapke define kiye functions se jodte hain
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("register", register))
+    application.add_handler(CommandHandler("open", open_menu))
+    application.add_handler(CommandHandler("close", close_menu))
+    application.add_handler(CommandHandler("catch", catch_command))
+    application.add_handler(CommandHandler("shop", shop))
+    application.add_handler(CommandHandler("team", team))
+    application.add_handler(CommandHandler("fight", fight))
+    application.add_handler(CommandHandler("tournament", tournament))
+    application.add_handler(CommandHandler("duel", duel))
+    application.add_handler(CommandHandler("stats", stats))
+    application.add_handler(CommandHandler("daily", daily))
+    
+    # Admin commands linking
+    application.add_handler(CommandHandler("add", admin_add_coins))
+    application.add_handler(CommandHandler("remove", admin_remove_coins))
+    application.add_handler(CommandHandler("givemafuba", admin_give_mafuba))
+    application.add_handler(CommandHandler("setlevel", admin_set_level))
+    application.add_handler(CommandHandler("addadmin", admin_add_admin))
+    application.add_handler(CommandHandler("removeadmin", admin_remove_admin))
+
+    # --- BUTTON CLICKS LINKING (Callback Handlers) ---
+    application.add_handler(CallbackQueryHandler(starter_callback, pattern="^starter_"))
+    application.add_handler(CallbackQueryHandler(mafuba_callback, pattern="^mafuba_"))
+    application.add_handler(CallbackQueryHandler(buy_callback, pattern="^buy_|^close_shop$"))
+    application.add_handler(CallbackQueryHandler(team_callback, pattern="^viewteam_"))
+    application.add_handler(CallbackQueryHandler(buildteam_callback, pattern="^buildteam_"))
+    application.add_handler(CallbackQueryHandler(selectchar_callback, pattern="^selectchar_"))
+    application.add_handler(CallbackQueryHandler(buildteam_done_callback, pattern="^buildteam_done$"))
+    application.add_handler(CallbackQueryHandler(setactive_callback, pattern="^setactive_"))
+    application.add_handler(CallbackQueryHandler(back_teams_callback, pattern="^back_teams$"))
+    application.add_handler(CallbackQueryHandler(fight_callback, pattern="^fight_"))
+    application.add_handler(CallbackQueryHandler(swap_callback, pattern="^swap_"))
+    application.add_handler(CallbackQueryHandler(tournament_callback, pattern="^enter_tournament$"))
+    application.add_handler(CallbackQueryHandler(duel_bet_callback, pattern="^duelbet_"))
+    application.add_handler(CallbackQueryHandler(duel_cancel_callback, pattern="^duelcancel_"))
+    application.add_handler(CallbackQueryHandler(duel_accept_callback, pattern="^duelaccept_"))
+    application.add_handler(CallbackQueryHandler(duel_decline_callback, pattern="^dueldecline_"))
+    application.add_handler(CallbackQueryHandler(duel_attack_callback, pattern="^duel_attack_"))
+    application.add_handler(CallbackQueryHandler(duel_swap_callback, pattern="^duel_swap_"))
+    application.add_handler(CallbackQueryHandler(duel_swapto_callback, pattern="^duel_swapto_"))
+    application.add_handler(CallbackQueryHandler(duel_back_callback, pattern="^duel_back_"))
+    application.add_handler(CallbackQueryHandler(duel_run_callback, pattern="^duel_run_"))
+
+    # Reply keyboard texts linking
+    application.add_handler(MessageHandler(filters.Regex("^/fight$"), fight))
+    application.add_handler(MessageHandler(filters.Regex("^/close$"), close_menu))
+
+    # Bot ko chalu karein
+    print("Bot is starting...")
+    application.run_polling(allowed_updates=Update.ALL_TYPES)
+
+if __name__ == "__main__":
+    main()
+
