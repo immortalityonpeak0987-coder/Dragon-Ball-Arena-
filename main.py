@@ -144,13 +144,11 @@ CHARACTER_ATTACKS = {
 }
 
 def get_character_attacks(char_name):
+    for key in CHARACTER_ATTACKS:
+        if key.lower() in char_name.lower():
+            return CHARACTER_ATTACKS[key]
+    return CHARACTER_ATTACKS["default"]
 
-for key in CHARACTER_ATTACKS:
-
-if key.lower() in char_name.lower():
-
-return CHARACTER_ATTACKS[key]
-return CHARACTER_ATTACKS["default"]
 
 DRAGON_BALL_CHARACTERS = [
 
