@@ -70,7 +70,7 @@ def get_character_attacks(char_name):
     return CHARACTER_ATTACKS["default"]
 
 DRAGON_BALL_CHARACTERS = [
-    {"name": "Goku (Base)", "power": 100, "rarity": "common"},
+    {"name": "Goku (Base)", "power": 700, "rarity": "common"},
     {"name": "Goku (Super Saiyan)", "power": 500, "rarity": "rare"},
     {"name": "Goku (Super Saiyan 2)", "power": 800, "rarity": "rare"},
     {"name": "Goku (Super Saiyan 3)", "power": 1200, "rarity": "epic"},
@@ -79,7 +79,7 @@ DRAGON_BALL_CHARACTERS = [
     {"name": "Goku (Ultra Instinct Sign)", "power": 4000, "rarity": "legendary"},
     {"name": "Goku (Ultra Instinct)", "power": 6000, "rarity": "mythic"},
     {"name": "Goku (Super Saiyan 4)", "power": 3500, "rarity": "legendary"},
-    {"name": "Vegeta (Base)", "power": 95, "rarity": "common"},
+    {"name": "Vegeta (Base)", "power": 700, "rarity": "common"},
     {"name": "Vegeta (Super Saiyan)", "power": 480, "rarity": "rare"},
     {"name": "Vegeta (Super Saiyan 2)", "power": 780, "rarity": "rare"},
     {"name": "Vegeta (Super Saiyan God)", "power": 1750, "rarity": "epic"},
@@ -87,7 +87,7 @@ DRAGON_BALL_CHARACTERS = [
     {"name": "Vegeta (Super Saiyan Blue Evolution)", "power": 3800, "rarity": "legendary"},
     {"name": "Vegeta (Ultra Ego)", "power": 5800, "rarity": "mythic"},
     {"name": "Vegeta (Super Saiyan 4)", "power": 3400, "rarity": "legendary"},
-    {"name": "Broly (Base)", "power": 150, "rarity": "common"},
+    {"name": "Broly (Base)", "power": 700, "rarity": "common"},
     {"name": "Broly (Wrathful)", "power": 1500, "rarity": "epic"},
     {"name": "Broly (Super Saiyan)", "power": 3000, "rarity": "legendary"},
     {"name": "Broly (Legendary Super Saiyan)", "power": 5000, "rarity": "mythic"},
@@ -174,9 +174,9 @@ DRAGON_BALL_CHARACTERS = [
 ]
 
 STARTER_CHARACTERS = [
-    {"name": "Goku (Base)", "power": 100, "rarity": "common"},
-    {"name": "Vegeta (Base)", "power": 95, "rarity": "common"},
-    {"name": "Broly (Base)", "power": 150, "rarity": "common"},
+    {"name": "Goku (Base)", "power": 700, "rarity": "common"},
+    {"name": "Vegeta (Base)", "power": 700, "rarity": "common"},
+    {"name": "Broly (Base)", "power": 700, "rarity": "common"},
 ]
 
 MAFUBA_TYPES = {
@@ -314,6 +314,11 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
+    try:
+        cur.execute("ALTER TABLE player_characters ADD COLUMN IF NOT EXISTS win_count INTEGER DEFAULT 0")
+    except Exception as e:
+        logging.error(f"Error adding win_count column: {e}")
+
     if OWNER_ID:
         try:
             cur.execute(
@@ -964,6 +969,25 @@ async def fight(update: Update, context: ContextTypes.DEFAULT_TYPE):
         cur.close()
         conn.close()
 
+def process_battle_completion(cur, fighter):
+    current_fights = fighter.get('win_count', 0) + 1
+    new_base_power = fighter['power']
+    power_msg = ""
+
+    if current_fights >= 7:
+        new_base_power += 5
+        current_fights = 0
+        power_msg = "\n⚡ **TRAINING COMPLETE!** Completed 7 fights! Power increased by +5!"
+    else:
+        fights_left = 7 - current_fights
+        power_msg = f"\n🎯 Fights needed for next Power Boost: {fights_left}"
+
+    cur.execute(
+        "UPDATE player_characters SET power = %s, current_power = %s, win_count = %s WHERE id = %s",
+        (new_base_power, new_base_power, current_fights, fighter['id'])
+    )
+    return power_msg
+
 async def fight_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -1085,13 +1109,14 @@ async def fight_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     new_level += 1
                     new_xp = 0
                     level_msg = f"\n🎉 **LEVEL UP!** Now Level {new_level}!"
-                
+                    power_msg = process_battle_completion(cur, current_fighter)
+
                 cur.execute("UPDATE players SET xp = %s, level = %s, coins = coins + %s WHERE user_id = %s", (new_xp, new_level, coin_gain, user_id))
                 cur.execute("UPDATE player_characters SET current_power = power WHERE user_id = %s", (user_id, ))
                 cur.execute("DELETE FROM battle_sessions WHERE user_id = %s", (user_id, ))
                 conn.commit()
-                await query.edit_message_text(f"🏆 **VICTORY!** 🏆\n\n{current_fighter['name']} used {attack_name}!\n{battle['enemy_name']} was defeated!\n\n✨ +{xp_gain} XP\n💰 +{coin_gain} Coins{level_msg}", parse_mode='Markdown')
-                
+                await query.edit_message_text(f"🏆 **VICTORY!** 🏆\n\n{current_fighter['name']} used {attack_name}!\n{battle['enemy_name']} was defeated!\n\n✨ +{xp_gain} XP\n💰 +{coin_gain} Coins{power_msg}{level_msg}", parse_mode='Markdown')
+
             elif new_your_power <= 0:
                 cur.execute(
                     """
@@ -1121,10 +1146,12 @@ async def fight_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         parse_mode='Markdown'
                     )
                 else:
+                    power_msg = process_battle_completion(cur, current_fighter)
                     cur.execute("UPDATE player_characters SET current_power = power WHERE user_id = %s", (user_id, ))
                     cur.execute("DELETE FROM battle_sessions WHERE user_id = %s", (user_id, ))
                     conn.commit()
-                    await query.edit_message_text(f"💔 **DEFEAT!** 💔\n\nAll your fighters fainted!\n{battle['enemy_name']} wins this round.\n\nTrain harder and try again!", parse_mode='Markdown')
+                    await query.edit_message_text(f"💔 **DEFEAT!** 💔\n\nAll your fighters fainted!\n{battle['enemy_name']} wins this round.\n{power_msg}\n\nTrain harder and try again!", parse_mode='Markdown')
+
             else:
                 keyboard = [
                     [InlineKeyboardButton(f"⚔️ {attacks[0]}", callback_data="fight_attack_0")],
