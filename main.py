@@ -17,6 +17,7 @@ from psycopg2.extras import RealDictCursor
 
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 DATABASE_URL = os.environ.get("DATABASE_URL")
+OWNER_ID = os.environ.get("OWNER_ID") # Yeh line add karein
 
 FIGHT_GIF = "https://media.tenor.com/sN0v0yLgEPsAAAAC/goku-ultra-instinct.gif"
 WELCOME_GIF = "https://media.tenor.com/F9lJaLPJAJAAAAAC/goku-dragon-ball.gif"
@@ -313,6 +314,14 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
+    if OWNER_ID:
+        try:
+            cur.execute(
+                "INSERT INTO admins (user_id, is_owner) VALUES (%s, TRUE) ON CONFLICT (user_id) DO UPDATE SET is_owner = TRUE", 
+                (int(OWNER_ID), )
+            )
+        except Exception as e:
+            logging.error(f"Error setting owner in DB: {e}")
 
     conn.commit()
     cur.close()
