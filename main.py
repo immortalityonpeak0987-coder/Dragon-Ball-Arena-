@@ -5,10 +5,6 @@ import logging
 from http import HTTPStatus
 from datetime import datetime, timedelta
 
-import uvicorn
-from asgiref.wsgi import WsgiToAsgi
-from flask import Flask
-
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
 
@@ -2070,33 +2066,10 @@ async def admin_approve_group(update: Update, context: ContextTypes.DEFAULT_TYPE
         cur.close()
         conn.close()
 
-# --- FLASK KEEP-ALIVE SERVER (FOR UPTIMEROBOT) ---
-from threading import Thread
-import os
-from flask import Flask
-
-app = Flask(__name__)
-
-@app.route('/')
-def home():
-    return "Dragon Ball Arena Bot is Alive!"
-
-def run():
-    # Render dynamic port assign karta hai
-    port = int(os.environ.get('PORT', 8080))
-    app.run(host='0.0.0.0', port=port)
-
-def keep_alive():
-    t = Thread(target=run)
-    t.start()
-
 # --- BOT INITIALIZATION ---
 def main():
     # 1. Database initialize karein
     init_db()
-
-    # 2. 24/7 web server start karein
-    keep_alive()
     
     # 3. Telegram Bot engine banayein
     application = Application.builder().token(TELEGRAM_TOKEN).build()
